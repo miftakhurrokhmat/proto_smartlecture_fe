@@ -4,16 +4,17 @@ import type {
   StudentListResponse,
   TranscriptResponse,
 } from "@shared/api";
+import { getToken } from "@/lib/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
-const DEV_TOKEN = "dev-token";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${DEV_TOKEN}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
   });
@@ -26,6 +27,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  login: (username: string, password: string) =>
+    request<{ access_token: string; token_type: string; user: { id: string; name: string; role: "student" | "instructor" } }>(
+      "/auth/login",
+      { method: "POST", body: JSON.stringify({ username, password }) }
+    ),
+  logout: () => request<{ status: string }>("/auth/logout", { method: "POST" }),
   getActiveSession: () => request<Session>("/sessions/active"),
   getTranscript: (sessionId: string, search?: string) => {
     const query = search ? `?search=${encodeURIComponent(search)}` : "";

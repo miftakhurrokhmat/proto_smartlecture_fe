@@ -3,8 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import auth, messages, schedule, sessions, students, transcripts, users
 from app.core.config import settings
+from app.db.database import run_migrations
 
 app = FastAPI(title=settings.app_name, version="1.0.0")
+
+
+@app.on_event("startup")
+async def startup_event():
+    run_migrations()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_url],
