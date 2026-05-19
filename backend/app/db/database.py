@@ -35,4 +35,18 @@ def run_migrations() -> None:
                 continue
             conn.executescript(sql_file.read_text())
             conn.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
+
+        conn.execute(
+            """
+            INSERT INTO users (id, username, password, name, role)
+            VALUES
+              ('student-001', 'siswa', 'siswa123', 'Dina Anjani', 'student'),
+              ('instr-001', 'guru', 'guru123', 'Dr. Budi Santoso', 'instructor')
+            ON CONFLICT(id) DO UPDATE SET
+              username=excluded.username,
+              password=excluded.password,
+              name=excluded.name,
+              role=excluded.role
+            """
+        )
         conn.commit()
