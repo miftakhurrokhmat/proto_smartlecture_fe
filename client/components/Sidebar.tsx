@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   BookOpen,
@@ -10,6 +10,7 @@ import {
   Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearAuth, getUser } from "@/lib/auth";
 
 interface SidebarProps {
   isTeacher?: boolean;
@@ -17,9 +18,11 @@ interface SidebarProps {
 
 export function Sidebar({ isTeacher = true }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const user = getUser();
 
   const teacherMenuItems = [
-    { icon: Home, label: "Beranda", path: "/" },
+    { icon: Home, label: "Beranda", path: "/teacher" },
     { icon: BookOpen, label: "Sesi", path: "/sessions" },
     { icon: FileText, label: "Materi", path: "/materials" },
     { icon: MessageSquare, label: "Diskusi", path: "/discussions" },
@@ -29,7 +32,7 @@ export function Sidebar({ isTeacher = true }: SidebarProps) {
   ];
 
   const studentMenuItems = [
-    { icon: Home, label: "Beranda", path: "/" },
+    { icon: Home, label: "Beranda", path: "/student" },
     { icon: BookOpen, label: "Sesi Saya", path: "/my-sessions" },
     { icon: FileText, label: "Transkipsi", path: "/transcripts" },
     { icon: MessageSquare, label: "Ringkasan", path: "/summary" },
@@ -81,10 +84,21 @@ export function Sidebar({ isTeacher = true }: SidebarProps) {
             <span className="text-xs font-bold text-white">DB</span>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-semibold truncate">Dr. Budi Santoso</div>
-            <div className="text-xs text-gray-400 truncate">Dosen</div>
+            <div className="text-xs font-semibold truncate">{user?.name ?? "Guest"}</div>
+            <div className="text-xs text-gray-400 truncate">
+              {user?.role === "student" ? "Siswa" : "Dosen"}
+            </div>
           </div>
         </div>
+        <button
+          onClick={() => {
+            clearAuth();
+            navigate("/login");
+          }}
+          className="mt-3 w-full rounded bg-[#264099] px-2 py-1 text-xs hover:bg-[#3453ba]"
+        >
+          Logout
+        </button>
       </div>
     </div>
   );

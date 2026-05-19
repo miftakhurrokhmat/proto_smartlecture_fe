@@ -11,7 +11,8 @@ import {
   Zap,
   FileText,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "@/lib/api";
 
 export default function StudentHome() {
   const [activeTab, setActiveTab] = useState<"transcript" | "summary">(
@@ -19,30 +20,11 @@ export default function StudentHome() {
   );
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Mock data
-  const transcripts = [
-    {
-      time: "10:15:32",
-      speaker: "Dosen",
-      text: "Selamat pagi semuanya. Pada pertemuan kali ini kita akan membahas tentang konsep dasar kecerdasan buatan dan penerapannya dalam kehidupan sehari-hari.",
-    },
-    {
-      time: "10:16:07",
-      speaker: "Dosen",
-      text: "Kecerdasan buatan adalah bidang ilmu komputer yang berfokus pada pembuat sistem yang dapat melakukan tugas-tugas yang biasanya membutuhkan kecerdasan manusia.",
-    },
-    {
-      time: "10:16:45",
-      speaker: "Dosen",
-      text: "Contohnya termasuk pengenalan suara, pengenalan gambar, pengambilan keputusan, dan banyak lagi.",
-    },
-    {
-      time: "10:17:12",
-      speaker: "Dosen",
-      text: "Mari kita mulai dengan pengenalan suara, yaitu teknologi yang memungkinkan komputer memahami ucapan manusia.",
-    },
-  ];
+  const [sessionId, setSessionId] = useState("session-001");
+  const [activeSessionName, setActiveSessionName] = useState("Memuat sesi...");
+  const [activeSessionInstructor, setActiveSessionInstructor] = useState("-");
+  const [transcripts, setTranscripts] = useState<Array<{ time: string; speaker: string; text: string }>>([]);
+  const [discussions, setDiscussions] = useState<Array<{ id: string; name: string; time: string; message: string; isTeacher: boolean; avatar: string }>>([]);
 
   const schedules = [
     {
@@ -65,29 +47,77 @@ export default function StudentHome() {
     },
   ];
 
-  const discussions = [
-    {
-      id: 1,
-      name: "Anda",
-      time: "10:18",
-      message: "Pak, apakah neural network termasuk dalam machine learning?",
-      isTeacher: false,
-      avatar: "YA",
-    },
-    {
-      id: 2,
-      name: "Dosen",
-      time: "10:19",
-      message:
-        "Ya, betul. Neural network adalah salah satu algoritma dalam machine learning yang terinspirasi dari cara kerja otak manusia.",
-      isTeacher: true,
-      avatar: "DS",
-    },
-  ];
+  const filteredTranscripts = useMemo(
+    () =>
+      transcripts.filter((item) =>
+        item.text.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [transcripts, searchQuery]
+  );
 
-  const handleSendMessage = () => {
+  useEffect(() => {
+    const load = async () => {
+      const active = await api.getActiveSession();
+      setSessionId(active.id);
+      setActiveSessionName(`${active.courseName} (${active.courseCode})`);
+      setActiveSessionInstructor(active.instructorName);
+      const [transcriptData, messageData] = await Promise.all([
+        api.getTranscript(active.id),
+        api.getMessages(active.id),
+      ]);
+      setTranscripts(
+        transcriptData.entries.map((entry) => ({
+          time: new Date(entry.timestamp).toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          speaker: entry.speakerName,
+          text: entry.text,
+        }))
+      );
+      setDiscussions(
+        messageData.messages.map((msg) => ({
+          id: msg.id,
+          name: msg.userName,
+          time: new Date(msg.timestamp).toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          message: msg.content,
+          isTeacher: msg.isInstructor,
+          avatar: msg.userName
+            .split(" ")
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase())
+            .join(""),
+        }))
+      );
+    };
+
+    load().catch((error) => console.error("Failed to load backend data:", error));
+  }, []);
+
+  const handleSendMessage = async () => {
     if (message.trim()) {
-      console.log("Sending message:", message);
+      await api.postMessage(sessionId, message.trim());
+      const messageData = await api.getMessages(sessionId);
+      setDiscussions(
+        messageData.messages.map((msg) => ({
+          id: msg.id,
+          name: msg.userName,
+          time: new Date(msg.timestamp).toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          message: msg.content,
+          isTeacher: msg.isInstructor,
+          avatar: msg.userName
+            .split(" ")
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase())
+            .join(""),
+        }))
+      );
       setMessage("");
     }
   };
@@ -123,10 +153,10 @@ export default function StudentHome() {
                       Sesi Aktif
                     </h2>
                     <p className="text-sm text-gray-600">
-                      System Informasi (TI-3A)
+                      {activeSessionName}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Dr. Budi Santoso
+                      {activeSessionInstructor}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 bg-red-100 rounded-full px-3 py-1">
@@ -184,7 +214,7 @@ export default function StudentHome() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-3">
-                      {transcripts.map((item, idx) => (
+                      {filteredTranscripts.map((item, idx) => (
                         <div
                           key={idx}
                           className="flex gap-3 pb-3 border-b border-gray-100 last:border-0"
