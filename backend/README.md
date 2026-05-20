@@ -20,7 +20,7 @@ API docs: `http://localhost:8000/docs`
 - Demo user credentials juga di-sync tiap startup (jadi login tetap bisa meski DB lama):
   - `guru / guru123`
   - `siswa / siswa123`
-  - sinkronisasi memakai `ON CONFLICT(username)` untuk menghindari kasus user lama bentrok id tapi username sama.
+  - sinkronisasi dilakukan dengan hapus+insert untuk username/id demo agar konsisten walau DB lama pernah berubah.
 
 ## Menjalankan FE + BE agar login berhasil
 
