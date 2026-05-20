@@ -13,11 +13,11 @@ def get_connection() -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     return conn
 
+        conn.execute(
+            """
 
 def run_migrations() -> None:
     with get_connection() as conn:
-        conn.execute(
-            """
             CREATE TABLE IF NOT EXISTS schema_migrations (
               version TEXT PRIMARY KEY,
               applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
