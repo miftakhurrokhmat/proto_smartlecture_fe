@@ -14,3 +14,9 @@ async def require_auth(
         )
 
     return credentials.credentials
+
+
+def parse_user_id(token: str) -> str:
+    if not token.startswith("user:"):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    return token.replace("user:", "", 1)
