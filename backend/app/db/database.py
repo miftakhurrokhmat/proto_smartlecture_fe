@@ -39,11 +39,20 @@ def run_migrations() -> None:
         conn.execute(
             """
             INSERT INTO users (id, username, password, name, role)
-            VALUES
-              ('student-001', 'siswa', 'siswa123', 'Dina Anjani', 'student'),
-              ('instr-001', 'guru', 'guru123', 'Dr. Budi Santoso', 'instructor')
-            ON CONFLICT(id) DO UPDATE SET
-              username=excluded.username,
+            VALUES ('student-001', 'siswa', 'siswa123', 'Dina Anjani', 'student')
+            ON CONFLICT(username) DO UPDATE SET
+              id=excluded.id,
+              password=excluded.password,
+              name=excluded.name,
+              role=excluded.role
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO users (id, username, password, name, role)
+            VALUES ('instr-001', 'guru', 'guru123', 'Dr. Budi Santoso', 'instructor')
+            ON CONFLICT(username) DO UPDATE SET
+              id=excluded.id,
               password=excluded.password,
               name=excluded.name,
               role=excluded.role
